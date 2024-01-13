@@ -3,6 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import Gmail
 import os
+from transformers import pipeline
 from rest_framework.decorators import api_view, renderer_classes
 from django.conf import settings
 from googleapiclient.discovery import build
@@ -75,6 +76,7 @@ class InboxView(APIView):
             date = convertDate(int(txt["internalDate"]))
             email_dict = {
                 'id': message['id'],
+                'sender':sender,
                 'subject': subject,
                 'snippet':txt['snippet'],
                 'date':  date
@@ -84,16 +86,12 @@ class InboxView(APIView):
             
         return Response(emails)
 
-
-
 def remove_urls(email_text):
-    
     email_text = re.sub(r'\([^)]*\)', '', email_text)
     email_text = re.sub(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', '', email_text)
     email_text = re.sub(r'[^a-zA-Z0-9\s.,!-]', '', email_text)
     email_text = ' '.join(email_text.split())
     return email_text
-
     
 def get_plain_text(message):
     payload = message['payload']
@@ -103,7 +101,6 @@ def get_plain_text(message):
                 data = part['body']['data']
                 plain_text = base64.urlsafe_b64decode(data).decode('utf-8')
                 return remove_urls(plain_text)
-
     return None
 
 @api_view(('GET',))
@@ -114,7 +111,6 @@ def detailEmailView(request,pk):
     except errors.HttpError as error:
         return JsonResponse({'error': str(error)}, status=400)
 
-    
     payload = txt['payload'] 
     headers = payload['headers'] 
     for d in headers: 
@@ -122,20 +118,51 @@ def detailEmailView(request,pk):
             subject = d['value'] 
         if d['name'] == 'From': 
             sender = d['value'] 
-
         
     plain_text = get_plain_text(txt)
     email = []
     date = convertDate(int(txt["internalDate"]))
     email_dict = {
         'id': pk,
+        'sender':sender,
         'subject': subject,
-        'snippet':txt['snippet'],
         'body':plain_text,
         'date':date,
 
     }
     print(plain_text)
     email.append(email_dict)
-    
     return Response(email)
+
+
+
+@api_view(('GET',))
+def summarizeEmailView(request,pk):
+    try:
+        service = SetupGmail()
+        txt = service.users().messages().get(userId='me', id=pk).execute() 
+    except errors.HttpError as error:
+        return JsonResponse({'error': str(error)}, status=400)
+
+    payload = txt['payload'] 
+    headers = payload['headers'] 
+    for d in headers: 
+        if d['name'] == 'Subject': 
+            subject = d['value'] 
+        if d['name'] == 'From': 
+            sender = d['value'] 
+        
+    plain_text = get_plain_text(txt)
+    email = []
+    summarizer = pipeline('summarization', model="sshleifer/distilbart-cnn-12-6")
+    plain_text = str(summarizer(plain_text, max_length=130, min_length=30))
+
+    email_dict = {
+        'id': pk,
+        'sender':sender,
+        'subject': subject,
+        'summarized_text':plain_text[20:-5],
+    }
+    email.append(email_dict)
+    return Response(email)
+

@@ -77,7 +77,7 @@ def main():
         test+="Subject: "+str(subject) + '\n' + "From: "+ str(sender) + '\n' + "Message: "+ str(body)
       
         print("Message: ", body)
-        summarizer = pipeline('summarization', model="Falconsai/text_summarization")
+        summarizer = pipeline('summarization', model="sshleifer/distilbart-cnn-12-6")
         print(summarizer(str(test), max_length=230, min_length=30)) 
         print('\n') 
         
