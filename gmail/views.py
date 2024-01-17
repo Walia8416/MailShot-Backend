@@ -152,7 +152,7 @@ def summarizeEmailView(request,pk):
         if d['name'] == 'From': 
             sender = d['value'] 
         
-    plain_text = get_plain_text(txt)
+    plain_text = 'subject - '+subject+'\n'+get_plain_text(txt)
     email = []
     summarizer = pipeline('summarization', model="sshleifer/distilbart-cnn-12-6")
     plain_text = str(summarizer(plain_text, max_length=130, min_length=30))
