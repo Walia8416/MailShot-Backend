@@ -107,7 +107,7 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
-
+ALLOWED_HOSTS = ['*']
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
