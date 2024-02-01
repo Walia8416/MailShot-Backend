@@ -33,7 +33,7 @@ def convertDate(timestamp):
 
 def SetupGmail():
     SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
-
+    creds = None
     if os.path.exists("token.json"):
         creds = Credentials.from_authorized_user_file("token.json", SCOPES)
     
@@ -55,11 +55,10 @@ def SetupGmail():
 
 class InboxView(APIView):
     def get(self,request):
-        try:
-            service = SetupGmail()
-            results = service.users().messages().list(userId='me', q='label:inbox',maxResults=1).execute()
-        except errors.HttpError as error:
-            return JsonResponse({'error': str(error)}, status=400)
+    
+        service = SetupGmail()
+        results = service.users().messages().list(userId='me', q='label:inbox',maxResults=10).execute()
+        
         messages = results.get('messages', [])
 
         emails = []
