@@ -153,8 +153,8 @@ def summarizeEmailView(request,pk):
         
     plain_text = 'subject - '+subject+'\n'+get_plain_text(txt)
     email = []
-    summarizer = pipeline('summarization', model="sshleifer/distilbart-cnn-12-6")
-    plain_text = str(summarizer(plain_text, max_length=130, min_length=30))
+    summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
+    plain_text = summarizer(plain_text, max_length=130, min_length=30, do_sample=False)
 
     email_dict = {
         'id': pk,
